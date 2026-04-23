@@ -1,7 +1,15 @@
-- name: Initialize of first Control Node
-  hosts: master1
+- name: Build Control Nodes
+  hosts: masters
   become: true
   tasks:
+    - name: Restart keepalived
+      service:
+        name: keepalived
+        state: restarted
+    - name: Restart haproxy
+      service:
+        name: haproxy
+        state: restarted
     - name: Copy kubeadm-config.yml to node
       template:
         src: ../kubeadm-config.j2
@@ -12,9 +20,10 @@
       shell:
         kubeadm init --config /etc/kubernetes/kubeadm-config.yml -v5 && \
         mkdir $HOME/.kube && \
-        ln -s /etc/kubernetes/kubeadm-config.yml $HOME/.kube/config && \
+        ln -s /etc/kubernetes/admin.conf $HOME/.kube/config && \
         chown ubuntu:ubuntu $HOME/.kube && \
         chown ubuntu:ubuntu $HOME/.kube/config
+    
 
 
 

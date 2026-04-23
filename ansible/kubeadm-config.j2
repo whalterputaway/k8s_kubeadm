@@ -61,6 +61,12 @@ kind: KubeletConfiguration
 clusterDNS:
   - 169.254.25.10
 cgroupDriver: systemd
+systemReserved:
+  memory: 512Mi
+  cpu: 500m
+  ephemeral-storage: 2Gi
+containerLogMaxSize: 1Mi
+containerLogMaxFiles: 3
 
 
 
