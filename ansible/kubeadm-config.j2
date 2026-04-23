@@ -1,7 +1,7 @@
 ---
 apiVersion: kubeadm.k8s.io/v1beta4
 kind: InitConfiguration
-bootStrapTokens:
+bootstrapTokens:
   - groups:
       - system:bootstrappers:kubeadm:default-node-token
     ttl: 24h0m0s
@@ -9,7 +9,7 @@ bootStrapTokens:
       - signing
       - authentication
 localAPIEndpoint:
-  advertiseAddress: 192.168.100.29
+  advertiseAddress: "{{ hostvars['master1']['ip'] }}"
   bindPort: 6443
 nodeRegistration:
   criSocket: "unix:///var/run/containerd/containerd.sock"

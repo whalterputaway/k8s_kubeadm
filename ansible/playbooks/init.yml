@@ -3,12 +3,14 @@
   become: true
   tasks:
     - name: Copy kubeadm-config.yml to node
-      copy:
-        src: ../kubeadm-config.yml
+      template:
+        src: ../kubeadm-config.j2
         dest: /etc/kubernetes/kubeadm-config.yml
+      tags:
+        - move
     - name: Init
       shell:
-        kubeadm init --config /etc/kubernetes/kubeadm-config.yml && \
+        kubeadm init --config /etc/kubernetes/kubeadm-config.yml -v5 && \
         mkdir $HOME/.kube && \
         ln -s /etc/kubernetes/kubeadm-config.yml $HOME/.kube/config && \
         chown ubuntu:ubuntu $HOME/.kube && \
