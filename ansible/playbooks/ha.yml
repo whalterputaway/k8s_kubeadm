@@ -1,0 +1,129 @@
+- name: High Availability k8s cluster
+  hosts: [masters]
+  become: true
+  gather_facts: true
+  tasks:
+    - name: Update cache
+      shell: apt update
+    - name: Install HAproxy
+      package:
+        name: haproxy
+        state: present
+    - name: Install keepalived
+      apt:
+        name: keepalived
+        state: present
+    - name: Configure keepalived on master
+      blockinfile:
+        create: true
+        mode: '0644'
+        path: /etc/keepalived/keepalived.conf
+        state: present 
+        block: |
+          vrrp_script chk_haproxy {
+            script "killall -0 haproxy"
+            interval 2
+            weight 2
+          }
+
+          vrrp_instance VI_1 {
+            interface eth0
+            state MASTER
+
+            virtual_router_id 51
+            priority 101
+
+            virtual_ipaddress {
+              192.168.100.100/24
+            }
+            track_script {
+              chk_haproxy
+            }
+          }
+      delegate_to: master1
+      notify: restart keepalived
+    - name: Configure keepalived on slaves
+      blockinfile:
+        create: true
+        mode: '0644'
+        path: /etc/keepalived/keepalived.conf
+        state: present
+        block: |
+          vrrp_script chk_haproxy {
+            script "killall -0 haproxy"
+            interval 2
+            weight 2    
+          }
+          vrrp_instance VI_1 {
+            interface eth0
+            state BACKUP
+
+            virtual_router_id 51
+            priority 100
+
+            virtual_ipaddress {
+              192.168.100.100/24
+            }
+            track_script {
+              chk_haproxy
+            } 
+          }
+      when: inventory_hostname != "master1"
+      notify: restart keepalived
+    - name: Configure haproxy on hosts
+      blockinfile:
+        state: present
+        create: true
+        mode: '0644'
+        path: /etc/haproxy/haproxy.cfg
+        block: |
+          global
+              log /dev/log local0
+              log /dev/log local1 notice
+              maxconn 4096
+              user haproxy
+              group haproxy
+          defaults
+              log global
+              mode tcp
+              option tcplog
+              option dontlognull
+              retries 3
+              timeout connect 5s
+              timeout client 30s
+              timeout server 30s
+          frontend main
+            bind 192.168.100.100:7443
+            default_backend app
+          backend app
+            mode tcp
+            balance roundrobin
+            server master1 {{ hostvars['master1']['ip'] }}:6443 check
+            server master2 {{ hostvars['master2']['ip'] }}:6443 check
+            server master3 {{ hostvars['master3']['ip'] }}:6443 check
+          listen stats
+            bind *:9000
+            mode http
+            stats enable 
+            stats hide-version
+            stats realm Haproxy\ Statistics
+            stats uri /haproxy_stats
+      notify: restart haproxy
+      ignore_errors: true
+    
+  handlers:
+    - name: restart haproxy
+      service:
+        name: haproxy
+        enabled: true
+        state: restarted
+    - name: restart keepalived
+      service:
+        name: keepalived
+        state: restarted
+        enabled: true
+
+
+
+
+        

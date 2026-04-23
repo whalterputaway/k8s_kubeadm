@@ -1,0 +1,88 @@
+- name: Prepare
+  hosts: all
+  become: true
+  gather_facts: true
+  vars:
+    vkube_version: "v1.34"
+    kube_version: "1.34.0-1.1"
+  tasks:
+    - name: Swap off
+      shell:
+        swapoff -a && \
+        sed -i '/ swap / s/^/#/' /etc/fstab
+    - name: Firewall off
+      shell:
+        systemctl stop firewalld && \
+        systemctl disable firewalld
+      ignore_errors: true
+    - name: Set up kernel mods (1/3)
+      shell:
+        modprobe br_netfilter
+    - name: Set up kernel mods (2/3)
+      lineinfile:
+        state: present
+        path: /etc/modules-load.d/modules-kubernetes.conf
+        create: true
+        line: "br_netfilter"
+    - name: Set up kernel mods (3/3)
+      lineinfile:
+        state: present
+        path: /etc/sysctl.conf
+        create: true
+        line: "{{ item }}"
+      loop:
+        - "net.ipv4.ip_forward=1"
+        - "net.bridge.bridge-nf-call-iptables=1"
+        - "net.ipv4.ip_nonlocal_bind=1"
+      notify: restart sysctl
+  
+    - name: Add Kubernetes repository
+      shell: |
+        mkdir -p /etc/apt/keyrings && \
+        curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.34/deb/Release.key | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg && \
+        echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/{{ vkube_version }}/deb/ /" > /etc/apt/sources.list.d/kubernetes.list && \
+        apt-get update
+      args:
+        creates: /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+      when: ansible_os_family == "Debian"
+      tags: [repository]
+    - name: Install apps
+      package: 
+        name: "{{ item }}"
+        state: present
+      loop:
+        - bash-completion
+        - python3
+        - tar
+        - containerd
+        - chrony
+        - kubectl={{ kube_version }}
+        - kubelet={{ kube_version }}
+        - kubeadm={{ kube_version }}
+    - name: NTP on
+      service:
+        name: chrony
+        enabled: true
+        state: started
+    - name: containerd on
+      service:
+        name: containerd
+        state: started
+        enabled: true
+    - name: crictl settings
+      lineinfile:
+        path: /etc/crictl.yaml
+        line: "{{ item }}"
+        create: true
+      loop:
+        - 'runtime-endpoint: "unix:///run/containerd/containerd.sock"'
+        - 'image-endpoint: "unix:///run/containerd/containerd.sock"'
+        - 'timeout: 0'
+        - 'pull-image-on-create: false'
+        - 'disable-pull-on-run: false'
+  handlers:
+    - name: restart sysctl
+      shell: sysctl --system
+    
+    
+        

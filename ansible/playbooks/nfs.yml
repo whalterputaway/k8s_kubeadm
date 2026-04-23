@@ -1,0 +1,71 @@
+- name: Install and set up NFS-server
+  hosts: helpers
+  become: true
+  gather_facts: true
+  vars:
+    device: /dev/vdb
+  tasks:
+    - name: Install NFS-kernel-server
+      package:
+        name: nfs-kernel-server
+        state: present
+    - name: Set up nfs-service
+      service:
+        name: nfs-server
+        state: started
+        enabled: true
+    - name: Create NFS-folder
+      file:
+        path: /nfs
+        mode: '0777'
+        state: directory
+    - name: Formate NFS-folder
+      filesystem:
+        fstype: ext4
+        state: present
+        dev: "{{ device }}"
+    - name: Mount NFS-folder
+      ansible.posix.mount:
+        src: "{{ device }}"
+        path: /nfs
+        state: present
+        fstype: ext4
+    - name: Edit /etc/exports
+      lineinfile:
+        path: /etc/exports
+        line: "/nfs {{ subnet }}(rw,sync,no_subtree_check,no_root_squash,no_all_squash,insecure)"
+        create: yes
+        state: present
+
+      notify: restart_nfs
+  handlers:
+    - name: restart_nfs
+      service:
+        name: nfs-server
+        state: restarted
+
+- name: Install NFS-client
+  hosts: [masters, workers]
+  become: true
+  gather_facts: true
+  tasks:
+    - name: Install NFS-client
+      package:  
+        name: nfs-common
+        state: latest
+    - name: Create NFS-folder
+      file:
+        state: directory
+        path: /nfs
+        mode: '0777'
+    - name: Mount NFS
+      ansible.posix.mount:
+        path: /nfs
+        fstype: nfs
+        state: mounted
+        src: "{{ helper_ip }}:/nfs" 
+
+
+  
+ 
+        

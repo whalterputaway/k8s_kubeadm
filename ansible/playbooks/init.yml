@@ -1,0 +1,19 @@
+- name: Initialize of first Control Node
+  hosts: master1
+  become: true
+  tasks:
+    - name: Copy kubeadm-config.yml to node
+      copy:
+        src: ../kubeadm-config.yml
+        dest: /etc/kubernetes/kubeadm-config.yml
+    - name: Init
+      shell:
+        kubeadm init --config /etc/kubernetes/kubeadm-config.yml && \
+        mkdir $HOME/.kube && \
+        ln -s /etc/kubernetes/kubeadm-config.yml $HOME/.kube/config && \
+        chown ubuntu:ubuntu $HOME/.kube && \
+        chown ubuntu:ubuntu $HOME/.kube/config
+
+
+
+

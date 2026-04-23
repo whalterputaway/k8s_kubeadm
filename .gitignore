@@ -1,0 +1,7 @@
+ssh_keys
+.terraform*
+.terraform.lock.hcl
+credentials.tf 
+terraform.tfstate
+terraform.tfstate.backup
+inventory.ini

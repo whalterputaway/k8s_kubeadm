@@ -1,0 +1,66 @@
+---
+apiVersion: kubeadm.k8s.io/v1beta4
+kind: InitConfiguration
+bootStrapTokens:
+  - groups:
+      - system:bootstrappers:kubeadm:default-node-token
+    ttl: 24h0m0s
+    usages:
+      - signing
+      - authentication
+localAPIEndpoint:
+  advertiseAddress: 192.168.100.29
+  bindPort: 6443
+nodeRegistration:
+  criSocket: "unix:///var/run/containerd/containerd.sock"
+  imagePullPolicy: IfNotPresent
+  name: master1 
+  taints:
+    - key: node-role.kubernetes.io/control-plane
+      effect: NoSchedule
+---
+apiVersion: kubeadm.k8s.io/v1beta4
+kind: ClusterConfiguration
+certificatesDir: /etc/kubernetes/pki
+clusterName: cluster.local
+controllerManager: {}
+dns: {}
+etcd:
+  local: 
+    dataDir: /var/lib/etcd
+imageRepository: "registry.k8s.io"
+apiServer:
+  timeoutForControlPlane: 4m0s
+  extraArgs:
+    - name: authorization-mode
+      value: "Node,RBAC"
+    - name: bind-address
+      value: "0.0.0.0"
+    - name: service-cluster-ip-range
+      value: "10.233.0.0/18"
+    - name: service-node-port-range
+      value: "30000-32767"
+kubernetesVersion: "1.34.6"
+controlPlaneEndpoint: 192.168.100.100:7443
+networking:
+  dnsDomain: cluster.local
+  podSubnet: "10.233.64.0/18"
+  serviceSubnet: "10.233.0.0/18"
+scheduler: {}
+---
+apiVersion: kubeproxy.config.k8s.io/v1alpha1
+kind: KubeProxyConfiguration
+bindAddress: 0.0.0.0
+clusterCIDR: "10.233.64.0/18"
+ipvs:
+  strictARP: True 
+mode: ipvs
+---
+apiVersion: kubelet.config.k8s.io/v1beta1
+kind: KubeletConfiguration
+clusterDNS:
+  - 169.254.25.10
+cgroupDriver: systemd
+
+
+
