@@ -34,7 +34,9 @@
         - "net.ipv4.ip_forward=1"
         - "net.bridge.bridge-nf-call-iptables=1"
         - "net.ipv4.ip_nonlocal_bind=1"
-      notify: restart sysctl
+    - name: restart sysctl
+      shell:
+        sysctl --system
   
     - name: Add Kubernetes repository
       shell: |
@@ -44,7 +46,6 @@
         apt-get update
       args:
         creates: /etc/apt/keyrings/kubernetes-apt-keyring.gpg
-      when: ansible_os_family == "Debian"
       tags: [repository]
     - name: Install apps
       package: 

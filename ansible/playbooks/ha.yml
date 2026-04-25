@@ -71,7 +71,12 @@
             } 
           }
       when: inventory_hostname != "master1"
-      notify: restart keepalived
+    - name: Restart keepalived
+      service:
+        name: keepalived
+        state: restarted
+        enabled: true
+
     - name: Configure haproxy on hosts
       blockinfile:
         state: present
@@ -110,20 +115,18 @@
             stats hide-version
             stats realm Haproxy\ Statistics
             stats uri /haproxy_stats
-      notify: restart haproxy
-      ignore_errors: true
-    
-  handlers:
-    - name: restart haproxy
+    - name: Restart haproxy
       service:
         name: haproxy
-        enabled: true
-        state: restarted
-    - name: restart keepalived
-      service:
-        name: keepalived
         state: restarted
         enabled: true
+    - name: Set Up bash-completion
+      lineinfile:
+        path: /etc/bash.bashrc
+        line: "source <(kubectl completion bash)"
+        state: present 
+      ignore_errors: true
+    
 
 
 

@@ -1,28 +1,44 @@
 - name: Build Control Nodes
-  hosts: masters
+  hosts: master1
   become: true
   tasks:
-    - name: Restart keepalived
-      service:
-        name: keepalived
-        state: restarted
-    - name: Restart haproxy
-      service:
-        name: haproxy
-        state: restarted
     - name: Copy kubeadm-config.yml to node
       template:
-        src: ../kubeadm-config.j2
+        src: ../templates/kubeadm-config.j2
         dest: /etc/kubernetes/kubeadm-config.yml
       tags:
         - move
-    - name: Init
+    - name: kubeadm init
       shell:
-        kubeadm init --config /etc/kubernetes/kubeadm-config.yml -v5 && \
+        kubeadm init --config /etc/kubernetes/kubeadm-config.yml -v5
+      ignore_errors: true
+    - name: Set Admin Config
+      shell:
         mkdir $HOME/.kube && \
-        ln -s /etc/kubernetes/admin.conf $HOME/.kube/config && \
-        chown ubuntu:ubuntu $HOME/.kube && \
-        chown ubuntu:ubuntu $HOME/.kube/config
+        ln -s /etc/kubernetes/admin.conf $HOME/.kube/config
+      ignore_errors: true
+      tags:
+        - config
+    - name: Copy nodelocaldns.yml to node
+      template:
+        src: ../templates/nodelocaldns.j2
+        dest: /etc/kubernetes/nodelocaldns.yml
+    - name: Set up nodelocaldnds
+      shell:
+        kubectl apply -f /etc/kubernetes/nodelocaldns.yml
+    - name: Install Calico tigera-operator.yml
+      shell:
+        kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/refs/heads/master/manifests/tigera-operator.yaml
+    - name: Install Calico (1/2)
+      template:
+        src: ../templates/calico-install.j2
+        dest: /etc/kubernetes/calico-install.yml
+    - name: Install Calico (2/2)
+      shell:
+        kubectl apply -f /etc/kubernetes/calico-install.yml
+
+    
+
     
 
 
