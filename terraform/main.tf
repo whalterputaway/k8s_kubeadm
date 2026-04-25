@@ -87,6 +87,7 @@ master3    ansible_host=${yandex_compute_instance.vm[3].network_interface.0.nat_
 worker1    ansible_host=${yandex_compute_instance.vm[4].network_interface.0.nat_ip_address}       ip=${yandex_compute_instance.vm[4].network_interface.0.ip_address} 
 worker2    ansible_host=${yandex_compute_instance.vm[5].network_interface.0.nat_ip_address}       ip=${yandex_compute_instance.vm[5].network_interface.0.ip_address} 
 
+
 [all:vars]
 ansible_user=ubuntu
 ansible_ssh_private_key_file=~/k8s_kubeadm/ssh_keys/private
