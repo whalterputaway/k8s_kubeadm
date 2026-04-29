@@ -2,6 +2,8 @@
   hosts: [masters]
   become: true
   gather_facts: true
+  vars:
+    interface: enp0s3
   tasks:
     - name: Update cache
       shell: apt update
@@ -28,21 +30,20 @@
           }
 
           vrrp_instance VI_1 {
-            interface eth0
+            interface {{ interface }}
             state MASTER
 
             virtual_router_id 51
             priority 101
 
             virtual_ipaddress {
-              192.168.100.100/24
+              {{ vip }}/24
             }
             track_script {
               chk_haproxy
             }
           }
       delegate_to: master1
-      notify: restart keepalived
     - name: Configure keepalived on slaves
       blockinfile:
         create: true
@@ -57,14 +58,14 @@
             weight 2    
           }
           vrrp_instance VI_1 {
-            interface eth0
+            interface {{ interface }}
             state BACKUP
 
             virtual_router_id 51
             priority 100
 
             virtual_ipaddress {
-              192.168.100.100/24
+              {{ vip }}/24
             }
             track_script {
               chk_haproxy
@@ -100,7 +101,7 @@
               timeout client 30s
               timeout server 30s
           frontend main
-            bind 192.168.100.100:7443
+            bind {{ vip }}:7443
             default_backend app
           backend app
             mode tcp
@@ -115,6 +116,8 @@
             stats hide-version
             stats realm Haproxy\ Statistics
             stats uri /haproxy_stats
+      tags:
+        - haproxy
     - name: Restart haproxy
       service:
         name: haproxy

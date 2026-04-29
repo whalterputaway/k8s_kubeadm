@@ -41,7 +41,7 @@ apiServer:
     - name: service-node-port-range
       value: "30000-32767"
 kubernetesVersion: "1.34.6"
-controlPlaneEndpoint: 192.168.100.100:7443
+controlPlaneEndpoint: {{ vip }}:7443
 networking:
   dnsDomain: cluster.local
   podSubnet: "10.233.64.0/18"

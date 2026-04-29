@@ -1,0 +1,17 @@
+- name: Add secondary control Nodes
+  become: true
+  hosts: masters
+  tasks:
+    - name: Get join command
+      shell:
+        kubeadm token create --print-join-command
+      register: command1
+      when: inventory_hostname == "master1"
+
+- name: Add workers nodes
+  hosts: slaves
+  become: true
+  tasks:
+    - name: Add worker node
+      shell:
+        "{{ hostvars['master1']['command1']['stdout'] }}"

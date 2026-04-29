@@ -5,3 +5,4 @@ credentials.tf
 terraform.tfstate
 terraform.tfstate.backup
 inventory.ini
+.venv

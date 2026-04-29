@@ -2,9 +2,6 @@
   hosts: all
   become: true
   gather_facts: true
-  vars:
-    vkube_version: "v1.34"
-    kube_version: "1.34.0-1.1"
   tasks:
     - name: Swap off
       shell:
@@ -41,7 +38,7 @@
     - name: Add Kubernetes repository
       shell: |
         mkdir -p /etc/apt/keyrings && \
-        curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.34/deb/Release.key | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg && \
+        curl -fsSL https://pkgs.k8s.io/core:/stable:/{{ vkube_version }}/deb/Release.key | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg && \
         echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/{{ vkube_version }}/deb/ /" > /etc/apt/sources.list.d/kubernetes.list && \
         apt-get update
       args:

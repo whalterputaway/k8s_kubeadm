@@ -36,6 +36,10 @@
     - name: Install Calico (2/2)
       shell:
         kubectl apply -f /etc/kubernetes/calico-install.yml
+      register: calico_result
+      retries: 10
+      timeout: 5
+      until: calico_result.rc == 0
 
     
 
